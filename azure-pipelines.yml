@@ -1,0 +1,82 @@
+name: $(Build.BuildId)
+
+# Triggers Pipeline only on Master
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - README.md
+    - LICENSE
+
+# Disables triggering Pipeline run at creation of every Pull Request
+pr: none
+
+# Global variables for the pipeline
+variables:
+  vmImage: 'ubuntu-latest'
+  k8s-service-connection: 'Kubernetes-Hellman'
+  kubernetes-namespace: 'monitoring'
+
+stages:
+# Continuous Deployment steps
+- stage: CD
+  displayName: 'Continuous Deployment'
+
+  jobs:
+
+  - job: Helm
+    displayName: 'Deploy to Kubernetes'
+    pool: 
+      vmImage: $(vmImage)
+
+    steps:
+    - bash: |
+        IMAGE=$(curl https://registry.hub.docker.com/v2/repositories/bloomberg/goldpinger/tags/\?page\= 2>/dev/null|jq '."results"[]["name"]' | grep -v "vendor" | head -n 1)
+        echo "##vso[task.setvariable variable=image]$IMAGE"
+
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: export IMAGE_VERSION=$(curl https://registry.hub.docker.com/v2/repositories/bloomberg/goldpinger/tags/\?page\= 2>/dev/null|jq '."results"[]["name"]' | grep -v "vendor" | head -n 1)
+
+    # Install the Helm binary to the host machine
+    - task: HelmInstaller@1
+      displayName: 'Helm client installer'
+      inputs: 
+        helmVersionToInstall: latest
+
+    # Initialize the Helm binary & upgrade tiller if version is lower than Helm
+    - task: HelmDeploy@0
+      displayName: 'Helm initialize'
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(k8s-service-connection)
+        command: init
+        upgradetiller: true
+        waitForExecution: true
+        arguments: --client-only
+
+    # Install helm chart, if already present, upgrade it
+    - task: HelmDeploy@0
+      displayName: 'Helm initialize stable repository'
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(k8s-service-connection)
+        command: 'repo'
+        arguments: 'add stable https://kubernetes-charts.storage.googleapis.com/'
+
+
+    # Install helm chart, if already present, upgrade it
+    - task: HelmDeploy@0
+      displayName: 'Helm chart Install / Upgrade'
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(k8s-service-connection)
+        chartName: 'stable/goldpinger'
+        releaseName: 'goldpinger'
+        command: 'upgrade'
+        install: true 
+        arguments: --namespace $(kubernetes-namespace) --set image.tag=$(image) --dry-run --debug
+        waitForExecution: false
