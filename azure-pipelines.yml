@@ -78,5 +78,5 @@ stages:
         releaseName: 'goldpinger'
         command: 'upgrade'
         install: true 
-        arguments: --namespace $(kubernetes-namespace) --set image.tag=$(image) --dry-run --debug
+        arguments: --namespace $(kubernetes-namespace) --set image.tag=$(image)
         waitForExecution: false
