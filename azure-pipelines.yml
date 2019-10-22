@@ -52,7 +52,7 @@ stages:
     pool: 
       vmImage: $(vmImage)
     dependsOn: Validate
-    condition: and(succeeded('terraform_stage'), or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['FORCE_ROLLOVER'], 'true')))
+    condition: and(succeeded('Validate'), eq(variables['run-update'], 'true')) 
   
     steps:
     # Install the Helm binary to the host machine
