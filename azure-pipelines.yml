@@ -7,7 +7,7 @@ trigger:
     - master
   paths:
     exclude:
-    - README.md
+   - README.md
     - LICENSE
 
 # Disables triggering Pipeline run at creation of every Pull Request
@@ -35,11 +35,6 @@ stages:
     - bash: |
         IMAGE=$(curl https://registry.hub.docker.com/v2/repositories/bloomberg/goldpinger/tags/\?page\= 2>/dev/null|jq '."results"[]["name"]' | grep -v "vendor" | head -n 1)
         echo "##vso[task.setvariable variable=image]$IMAGE"
-
-    - task: Bash@3
-      inputs:
-        targetType: 'inline'
-        script: export IMAGE_VERSION=$(curl https://registry.hub.docker.com/v2/repositories/bloomberg/goldpinger/tags/\?page\= 2>/dev/null|jq '."results"[]["name"]' | grep -v "vendor" | head -n 1)
 
     # Install the Helm binary to the host machine
     - task: HelmInstaller@1
