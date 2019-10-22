@@ -7,8 +7,16 @@ trigger:
     - master
   paths:
     exclude:
-   - README.md
+    - README.md
     - LICENSE
+
+schedules:
+- cron: "0 6 * * 1-5"
+  displayName: Daily rollover at 05:00 UTC
+  branches:
+    include:
+    - master
+  always: "true"
 
 # Disables triggering Pipeline run at creation of every Pull Request
 pr: none
@@ -18,6 +26,7 @@ variables:
   vmImage: 'ubuntu-latest'
   k8s-service-connection: 'Kubernetes-Hellman'
   kubernetes-namespace: 'monitoring'
+  run-update: 'true'
 
 stages:
 # Continuous Deployment steps
@@ -25,17 +34,27 @@ stages:
   displayName: 'Continuous Deployment'
 
   jobs:
+  - job: Validate
+    displayName: 'Validate if new release is available'
+    pool: 
+      vmImage: $(vmImage)
+
+    steps:
+    # Script validates if a new docker container has been created or helm chart has been updated
+    # If updated, a pipeline variable is set to allow the pipeline to run an update
+    - task: Bash@3
+      inputs:
+        targetType: 'filePath'
+        filePath: update-check.sh 
 
   - job: Helm
     displayName: 'Deploy to Kubernetes'
     pool: 
       vmImage: $(vmImage)
-
+    dependsOn: Validate
+    condition: and(succeeded('terraform_stage'), or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['FORCE_ROLLOVER'], 'true')))
+  
     steps:
-    - bash: |
-        IMAGE=$(curl https://registry.hub.docker.com/v2/repositories/bloomberg/goldpinger/tags/\?page\= 2>/dev/null|jq '."results"[]["name"]' | grep -v "vendor" | head -n 1)
-        echo "##vso[task.setvariable variable=image]$IMAGE"
-
     # Install the Helm binary to the host machine
     - task: HelmInstaller@1
       displayName: 'Helm client installer'
@@ -75,3 +94,12 @@ stages:
         install: true 
         arguments: --namespace $(kubernetes-namespace) --set image.tag=$(image)
         waitForExecution: false
+    
+    # Add label to the release for prometheus scraping
+    - task: Kubernetes@1
+      displayName: kubectl apply
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(k8s-service-connection)
+        command: label
+        arguments: services goldpinger scrape-service-metrics="true"
