@@ -12,6 +12,10 @@ BASE_CHART_NAME="goldpinger"
 HELM_CHART=$(helm search goldpinger --output json | jq '.[].Version' | tr -d '"')
 NEWEST_CHART=$BASE_CHART_NAME-$HELM_CHART
 
+# Set Image as pipeline variable
+echo "##vso[task.setvariable variable=image]$NEWEST_IMAGE"
+
+
 if [ $NEWEST_IMAGE != $CURRENT_IMAGE ] && [ $NEWEST_CHART != $CURRENT_CHART ]; then
 	echo "New image version detected updating from $CURRENT_IMAGE -> $NEWEST_IMAGE"
 	echo "New chart version detected updating from $CURRENT_CHART -> $NEWEST_CHART"
@@ -20,5 +24,6 @@ elif [ $NEWEST_IMAGE != $CURRENT_IMAGE ]; then
 elif [ $NEWEST_CHART != $CURRENT_CHART ]; then
 	echo "New chart version detected updating from $CURRENT_CHART -> $NEWEST_CHART"
 else
-	exit 1
+	echo "No updates detected, setting variable: run-update to false"
+	echo "##vso[task.setvariable variable=run-update]false"
 fi
