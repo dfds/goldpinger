@@ -36,7 +36,7 @@ stages:
   jobs:
   - job: Validate
     displayName: 'Validate if new release is available'
-    pool: 
+    pool:
       vmImage: $(vmImage)
 
     steps:
@@ -45,20 +45,20 @@ stages:
     - task: Bash@3
       inputs:
         targetType: 'filePath'
-        filePath: update-check.sh 
+        filePath: update-check.sh
 
   - job: Helm
     displayName: 'Deploy to Kubernetes'
-    pool: 
+    pool:
       vmImage: $(vmImage)
     dependsOn: Validate
-    condition: and(succeeded('Validate'), eq(variables['run-update'], 'true')) 
-  
+    condition: and(succeeded('Validate'), eq(variables['run-update'], 'true'))
+
     steps:
     # Install the Helm binary to the host machine
     - task: HelmInstaller@1
       displayName: 'Helm client installer'
-      inputs: 
+      inputs:
         helmVersionToInstall: latest
 
     # Initialize the Helm binary & upgrade tiller if version is lower than Helm
@@ -92,9 +92,9 @@ stages:
         releaseName: 'goldpinger'
         command: 'upgrade'
         install: true 
-        arguments: --namespace $(kubernetes-namespace) --set image.tag=$(image)
+        arguments: --namespace $(kubernetes-namespace)
         waitForExecution: false
-    
+
     # Add label to the release for prometheus scraping
     - task: Kubernetes@1
       displayName: kubectl apply
