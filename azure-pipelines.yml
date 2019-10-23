@@ -34,25 +34,10 @@ stages:
   displayName: 'Continuous Deployment'
 
   jobs:
-  - job: Validate
-    displayName: 'Validate if new release is available'
-    pool:
-      vmImage: $(vmImage)
-
-    steps:
-    # Script validates if a new docker container has been created or helm chart has been updated
-    # If updated, a pipeline variable is set to allow the pipeline to run an update
-    - task: Bash@3
-      inputs:
-        targetType: 'filePath'
-        filePath: update-check.sh
-
   - job: Helm
     displayName: 'Deploy to Kubernetes'
     pool:
       vmImage: $(vmImage)
-    dependsOn: Validate
-    condition: and(succeeded('Validate'), eq(variables['run-update'], 'true'))
 
     steps:
     # Install the Helm binary to the host machine
