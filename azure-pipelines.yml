@@ -102,4 +102,4 @@ stages:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(k8s-service-connection)
         command: label
-        arguments: services goldpinger --namespace $(kubernetes-namespace) scrape-service-metrics="true"
+        arguments: services goldpinger --namespace $(kubernetes-namespace) scrape-service-metrics="true" --overwrite=true
