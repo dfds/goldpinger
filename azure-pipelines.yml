@@ -59,7 +59,7 @@ stages:
     - task: HelmInstaller@1
       displayName: 'Helm client installer'
       inputs:
-        helmVersionToInstall: latest
+        helmVersionToInstall: 2.15.2
 
     # Initialize the Helm binary & upgrade tiller if version is lower than Helm
     - task: HelmDeploy@0
