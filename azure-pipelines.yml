@@ -77,7 +77,7 @@ stages:
         releaseName: 'goldpinger'
         command: 'upgrade'
         install: true 
-        arguments: --namespace $(kubernetes-namespace)
+        arguments: --namespace $(kubernetes-namespace) --set priorityClassName=cluster-monitoring
         waitForExecution: false
 
     # Add label to the release for prometheus scraping
